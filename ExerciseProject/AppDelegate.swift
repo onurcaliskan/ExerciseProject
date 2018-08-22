@@ -10,13 +10,14 @@ import UIKit
 import CoreData
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, CAAnimationDelegate {
 
     var window: UIWindow?
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        launchingAnimation()
         return true
     }
 
@@ -87,6 +88,55 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
             }
         }
+    }
+    
+    //Disabled launchscreen and making logo animation here.
+    func launchingAnimation() {
+        let mainStoryboard: UIStoryboard = UIStoryboard(name: "Main", bundle: nil)
+        var navigationController = mainStoryboard.instantiateViewController(withIdentifier: "navigationController") as! UIViewController
+        self.window!.rootViewController = navigationController
+        
+        // logo mask
+        navigationController.view.layer.mask = CALayer()
+        navigationController.view.layer.mask?.contents = UIImage(named: "logoIcon")!.cgImage
+        navigationController.view.layer.mask?.bounds = CGRect(x: 0, y: 0, width: 60, height: 60)
+        navigationController.view.layer.mask?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        navigationController.view.layer.mask?.position = navigationController.view.center
+        
+        // logo mask background view
+        var maskBgView = UIView(frame: navigationController.view.frame)
+        maskBgView.backgroundColor = .white
+        navigationController.view.addSubview(maskBgView)
+        navigationController.view.bringSubview(toFront: maskBgView)
+        
+        // logo mask animation
+        let transformAnimation = CAKeyframeAnimation(keyPath: "bounds")
+        transformAnimation.delegate = self as! CAAnimationDelegate
+        transformAnimation.duration = 1
+        transformAnimation.beginTime = CACurrentMediaTime() + 1 //add delay of 1 second
+        let initalBounds = NSValue(cgRect: (navigationController.view.layer.mask?.bounds)!)
+        let secondBounds = NSValue(cgRect: CGRect(x: 0, y: 0, width: 50, height: 50))
+        let finalBounds = NSValue(cgRect: CGRect(x: 0, y: 0, width: 2000, height: 2000))
+        transformAnimation.values = [initalBounds, secondBounds, finalBounds]
+        transformAnimation.keyTimes = [0, 0.5, 1]
+        transformAnimation.timingFunctions = [CAMediaTimingFunction(name: kCAMediaTimingFunctionEaseInEaseOut), CAMediaTimingFunction(name: kCAMediaTimingFunctionEaseOut)]
+        transformAnimation.isRemovedOnCompletion = false
+        transformAnimation.fillMode = kCAFillModeForwards
+        navigationController.view.layer.mask?.add(transformAnimation, forKey: "maskAnimation")
+        
+        // logo mask background view animation
+        UIView.animate(withDuration: 0.2,
+                       delay: 1.35,
+                       options: UIViewAnimationOptions.curveEaseIn,
+                       animations: {
+                        maskBgView.alpha = 0.0
+        },
+                       completion: { finished in
+                        
+                        maskBgView.removeFromSuperview()
+                        navigationController.view.layer.mask?.removeFromSuperlayer()
+                        
+        })
     }
 
 }
